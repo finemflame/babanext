@@ -1,10 +1,14 @@
 /* eslint-disable prettier/prettier */
 
 import { Helmet } from 'react-helmet';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 
-import { getPostBySlug } from 'lib/posts';
+import { getPostBySlug, getRecentPosts, getRelatedPosts, postPathBySlug } from 'lib/posts';
+import { categoryPathBySlug } from 'lib/categories';
 import { formatDate } from 'lib/datetime';
+import { ArticleJsonLd } from 'lib/json-ld';
+import { helmetSettingsFromMetadata } from 'lib/site';
 import useSite from 'hooks/use-site';
 import usePageMetadata from 'hooks/use-page-metadata';
 
@@ -12,16 +16,20 @@ import Layout from 'components/Layout';
 import Header from 'components/Header';
 import Section from 'components/Section';
 import Container from 'components/Container';
+import Content from 'components/Content';
 import Metadata from 'components/Metadata';
 import FeaturedImage from 'components/FeaturedImage';
 
 import styles from 'styles/pages/Post.module.scss';
 
-export default function Post({ post, socialImage }) {
+export default function Post({ post, socialImage, related }) {
+  const router = useRouter();
+
   const {
     title,
     metaTitle,
     description,
+    content,
     date,
     author,
     categories,
@@ -59,11 +67,15 @@ export default function Post({ post, socialImage }) {
     compactCategories: false,
   };
 
+  const { posts: relatedPostsList, title: relatedPostsTitle } = related || {};
+
   const helmetSettings = helmetSettingsFromMetadata(metadata);
 
   return (
     <Layout>
       <Helmet {...helmetSettings} />
+
+      <ArticleJsonLd post={post} siteTitle={siteMetadata.title} />
 
       <Header>
         {featuredImage && (
@@ -89,28 +101,85 @@ export default function Post({ post, socialImage }) {
         />
       </Header>
 
-      <Section>
+      <Content>
+        <Section>
+          <Container>
+            {/* Display a placeholder or summary of the content */}
+            <div
+              className={styles.content}
+              dangerouslySetInnerHTML={{
+                __html: '', // Replace with the placeholder or summary of the content
+              }}
+            />
+          </Container>
+        </Section>
+      </Content>
+
+      <Section className={styles.postFooter}>
         <Container>
           <p className={styles.postModified}>Last updated on {formatDate(modified)}.</p>
-        </Container>
-      </Section>
-    </Layout>
-  );
+
+                    {Array.isArray(relatedPostsList) && relatedPostsList.length > 0 && (
+<div className={styles.relatedPosts}>
+{relatedPostsTitle.name ? (
+<span>
+More from <Link href={relatedPostsTitle.link}>{relatedPostsTitle.name}</Link>
+</span>
+) : (
+<span>More Posts</span>
+)}
+<ul>
+{relatedPostsList.map((post) => (
+<li key={post.title}>
+<Link href={postPathBySlug(post.slug)}>{post.title}</Link>
+</li>
+))}
+</ul>
+</div>
+)}
+</Container>
+</Section>
+</Layout>
+);
 }
 
 export async function getStaticProps({ params = {} } = {}) {
-  const { post } = await getPostBySlug(params?.slug);
-
-  if (!post) {
-    return {
-      notFound: true,
-    };
-  }
+  // Redirect to the specific permalink URL on the WordPress domain
+  const permalinkUrl = `https://markmystories.com/${params.slug}`;
 
   return {
-    props: {
-      post,
-      socialImage: `${process.env.OG_IMAGE_DIRECTORY}/${params?.slug}.png`,
+    redirect: {
+      destination: permalinkUrl,
+      permanent: true,
     },
   };
 }
+
+
+export async function getStaticPaths() {
+// Only render the most recent posts to avoid spending unnecessary time
+// querying every single post from WordPress
+
+// Tip: this can be customized to use data or analytics to determine the
+// most popular posts and render those instead
+
+const { posts } = await getRecentPosts({
+count: process.env.POSTS_PRERENDER_COUNT, // Update this value in next.config.js!
+queryIncludes: 'index',
+});
+
+const paths = posts
+.filter(({ slug }) => typeof slug === 'string')
+.map(({ slug }) => ({
+params: {
+slug,
+},
+}));
+
+return {
+paths,
+fallback: 'blocking',
+};
+}
+
+
