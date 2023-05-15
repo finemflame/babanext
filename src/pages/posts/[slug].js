@@ -2,13 +2,10 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
 // Import the necessary functions from the 'lib/posts' file
-import { getPostBySlug, getRecentPosts, getRelatedPosts, postPathBySlug } from 'lib/posts';
+import { getPostBySlug, getRecentPosts, getRelatedPosts } from 'lib/posts';
 import { categoryPathBySlug } from 'lib/categories';
-import { formatDate } from 'lib/datetime';
-import { ArticleJsonLd } from 'lib/json-ld';
-import { helmetSettingsFromMetadata } from 'lib/site';
 
-export default function Post({ post, socialImage, related }) {
+export default function Post() {
   const router = useRouter();
 
   useEffect(() => {
@@ -22,41 +19,9 @@ export default function Post({ post, socialImage, related }) {
   return <div>Redirecting...</div>;
 }
 
-export async function getStaticProps({ params = {} } = {}) {
-  const { post } = await getPostBySlug(params?.slug);
-
-  if (!post) {
-    return {
-      props: {},
-      notFound: true,
-    };
-  }
-
-  const { categories, databaseId: postId } = post;
-
-  const props = {
-    post,
-    socialImage: `${process.env.OG_IMAGE_DIRECTORY}/${params?.slug}.png`,
-  };
-
-  const { category: relatedCategory, posts: relatedPosts } = (await getRelatedPosts(
-    categories,
-    postId
-  )) || {};
-  const hasRelated = relatedCategory && Array.isArray(relatedPosts) && relatedPosts.length;
-
-  if (hasRelated) {
-    props.related = {
-      posts: relatedPosts,
-      title: {
-        name: relatedCategory.name || null,
-        link: categoryPathBySlug(relatedCategory.slug),
-      },
-    };
-  }
-
+export async function getStaticProps() {
   return {
-    props,
+    props: {},
   };
 }
 
