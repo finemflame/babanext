@@ -1,3 +1,5 @@
+/* eslint-disable prettier/prettier */
+
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Helmet } from 'react-helmet';
