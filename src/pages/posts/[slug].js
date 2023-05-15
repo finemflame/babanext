@@ -22,15 +22,17 @@ import FeaturedImage from 'components/FeaturedImage';
 
 import styles from 'styles/pages/Post.module.scss';
 
+
 export default function Post({ post, socialImage, related }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (router.isReady) {
-      const redirectUrl = process.env.WORDPRESS_DOMAIN + router.asPath;
-      window.location.replace(redirectUrl);
-    }
-  }, [router.isReady, router.asPath]);
+    const graphqlEndpoint = process.env.WORDPRESS_GRAPHQL_ENDPOINT;
+    const domain = graphqlEndpoint.replace('/graphql', '');
+
+    const redirectUrl = domain + '/' + router.query.slug;
+    window.location.replace(redirectUrl);
+  }, [router.query.slug]);
 
 
   const {
