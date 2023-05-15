@@ -1,5 +1,7 @@
-import Link from 'next/link';
+import { useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { Helmet } from 'react-helmet';
+import Link from 'next/link';
 
 import { getPostBySlug, getRecentPosts, getRelatedPosts, postPathBySlug } from 'lib/posts';
 import { categoryPathBySlug } from 'lib/categories';
@@ -20,6 +22,13 @@ import FeaturedImage from 'components/FeaturedImage';
 import styles from 'styles/pages/Post.module.scss';
 
 export default function Post({ post, socialImage, related }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const redirectUrl = process.env.WORDPRESS_DOMAIN + router.asPath;
+    window.location.replace(redirectUrl);
+  }, [router]);
+
   const {
     title,
     metaTitle,
@@ -112,7 +121,7 @@ export default function Post({ post, socialImage, related }) {
       <Section className={styles.postFooter}>
         <Container>
           <p className={styles.postModified}>Last updated on {formatDate(modified)}.</p>
-          {Array.isArray(relatedPostsList) && relatedPostsList.length > 0 && (
+{Array.isArray(relatedPostsList) && relatedPostsList.length > 0 && (
             <div className={styles.relatedPosts}>
               {relatedPostsTitle.name ? (
                 <span>
@@ -172,10 +181,10 @@ export async function getStaticProps({ params = {} } = {}) {
 }
 
 export async function getStaticPaths() {
-  // Only render the most recent posts to avoid spending unecessary time
+  // Only render the most recent posts to avoid spending unnecessary time
   // querying every single post from WordPress
 
-  // Tip: this can be customized to use data or analytitcs to determine the
+  // Tip: this can be customized to use data or analytics to determine the
   // most popular posts and render those instead
 
   const { posts } = await getRecentPosts({
