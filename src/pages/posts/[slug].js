@@ -27,13 +27,14 @@ export default function Post({ post, socialImage, related }) {
   const router = useRouter();
 
   useEffect(() => {
-    const graphqlEndpoint = process.env.WORDPRESS_GRAPHQL_ENDPOINT;
-    const domain = graphqlEndpoint.replace('/graphql', '');
+    if (router.isReady) {
+      const graphqlEndpoint = process.env.WORDPRESS_GRAPHQL_ENDPOINT;
+      const domain = new URL(graphqlEndpoint).origin;
 
-    const redirectUrl = domain + '/' + router.query.slug;
-    window.location.replace(redirectUrl);
-  }, [router.query.slug]);
-
+      const redirectUrl = domain + router.asPath;
+      window.location.replace(redirectUrl);
+    }
+  }, [router.isReady, router.asPath]);
 
   const {
     title,
