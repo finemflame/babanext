@@ -1,10 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-// Import the necessary functions from the 'lib/posts' file
-import { getPostBySlug, getRecentPosts, getRelatedPosts } from 'lib/posts';
-import { categoryPathBySlug } from 'lib/categories';
-
 export default function Post() {
   const router = useRouter();
 
@@ -26,18 +22,7 @@ export async function getStaticProps() {
 }
 
 export async function getStaticPaths() {
-  const { posts } = await getRecentPosts({
-    count: process.env.POSTS_PRERENDER_COUNT,
-    queryIncludes: 'index',
-  });
-
-  const paths = posts
-    .filter(({ slug }) => typeof slug === 'string')
-    .map(({ slug }) => ({
-      params: {
-        slug,
-      },
-    }));
+  const paths = [];
 
   return {
     paths,
