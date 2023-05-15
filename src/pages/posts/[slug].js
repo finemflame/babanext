@@ -26,10 +26,14 @@ import styles from 'styles/pages/Post.module.scss';
 export default function Post({ post, socialImage, related }) {
   const router = useRouter();
 
-  useEffect(() => {
-  const redirectUrl = process.env.WORDPRESS_DOMAIN + '/' + router.query.slug;
+useEffect(() => {
+  const graphqlEndpoint = process.env.WORDPRESS_GRAPHQL_ENDPOINT;
+  const domain = graphqlEndpoint.replace('/graphql', '');
+
+  const redirectUrl = domain + '/' + router.query.slug;
   window.location.replace(redirectUrl);
 }, [router]);
+
 
 
   const {
