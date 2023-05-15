@@ -23,25 +23,126 @@ import FeaturedImage from 'components/FeaturedImage';
 
 import styles from 'styles/pages/Post.module.scss';
 
-export default function Post() {
+export default function Post({ post, socialImage, related }) {
   const router = useRouter();
 
-  useEffect(() => {
-    if (router.isReady) {
-      const graphqlEndpoint = process.env.WORDPRESS_GRAPHQL_ENDPOINT;
-      const domain = new URL(graphqlEndpoint).origin;
+  const {
+    title,
+    metaTitle,
+    description,
+    content,
+    date,
+    author,
+    categories,
+    modified,
+    featuredImage,
+    isSticky = false,
+  } = post;
 
-      const redirectUrl = domain + router.asPath;
-      window.location.replace(redirectUrl);
-    }
-  }, [router.isReady, router.asPath]);
+  const { metadata: siteMetadata = {}, homepage } = useSite();
 
-  return null;
+  if (!post.og) {
+    post.og = {};
+  }
+
+  post.og.imageUrl = `${homepage}${socialImage}`;
+  post.og.imageSecureUrl = post.og.imageUrl;
+  post.og.imageWidth = 2000;
+  post.og.imageHeight = 1000;
+
+  const { metadata } = usePageMetadata({
+    metadata: {
+      ...post,
+      title: metaTitle,
+      description: description || post.og?.description || `Read more about ${title}`,
+    },
+  });
+
+  if (process.env.WORDPRESS_PLUGIN_SEO !== true) {
+    metadata.title = `${title} - ${siteMetadata.title}`;
+    metadata.og.title = metadata.title;
+    metadata.twitter.title = metadata.title;
+  }
+
+  const metadataOptions = {
+    compactCategories: false,
+  };
+
+  const { posts: relatedPostsList, title: relatedPostsTitle } = related || {};
+
+  const helmetSettings = helmetSettingsFromMetadata(metadata);
+
+  return (
+    <Layout>
+      <Helmet {...helmetSettings} />
+
+      <ArticleJsonLd post={post} siteTitle={siteMetadata.title} />
+
+      <Header>
+        {featuredImage && (
+          <FeaturedImage
+            {...featuredImage}
+            src={featuredImage.sourceUrl}
+            dangerouslySetInnerHTML={featuredImage.caption}
+          />
+        )}
+        <h1
+          className={styles.title}
+          dangerouslySetInnerHTML={{
+            __html: title,
+          }}
+        />
+        <Metadata
+          className={styles.postMetadata}
+          date={date}
+          author={author}
+          categories={categories}
+          options={metadataOptions}
+          isSticky={isSticky}
+        />
+      </Header>
+
+      <Content>
+        <Section>
+          <Container>
+            {/* Display a placeholder or summary of the content */}
+            <div
+              className={styles.content}
+              dangerouslySetInnerHTML={{
+                __html: contentSummary, // Replace contentSummary with the placeholder or summary of the content
+              }}
+            />
+          </Container>
+        </Section>
+      </Content>
+
+      <Section className={styles.postFooter}>
+        <Container>
+          <p className={styles.postModified}>Last updated on {formatDate(modified)}.</p>
+          {Array.isArray(relatedPostsList) && relatedPostsList.length > 0 && (
+            <div className={styles.relatedPosts}>
+              {relatedPostsTitle.name ? (
+                <span>
+                  More from <Link href={relatedPostsTitle.link}>{relatedPostsTitle.name}</Link>
+                </span>
+              ) : (
+                <span>More Posts</span>
+              )}
+              <ul>
+                {relatedPostsList.map((post) => (
+                  <li key={post.title}>
+                    <Link href={postPathBySlug(post.slug)}>{post.title}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </Container>
+      </Section>
+    </Layout>
+  );
 }
 
-// Rest of your code...
-
-// Original code starts here
 export async function getStaticProps({ params = {} } = {}) {
   const { post } = await getPostBySlug(params?.slug);
 
@@ -52,63 +153,15 @@ export async function getStaticProps({ params = {} } = {}) {
     };
   }
 
-  const { categories, databaseId: postId } = post;
-
-  const { metadata: siteMetadata = {}, homepage } = useSite();
-
-  if (!post.og) {
-    post.og = {};
-  }
-
-  const socialImage = `${homepage}${post.featuredImage?.sourceUrl}`;
-
-  post.og.imageUrl = socialImage;
-  post.og.imageSecureUrl = socialImage;
-  post.og.imageWidth = 2000;
-  post.og.imageHeight = 1000;
-
-  const { metadata } = usePageMetadata({
-    metadata: {
-      ...post,
-      title: post.metaTitle || post.title,
-      description: post.description || post.og?.description || `Read more about ${post.title}`,
-    },
-  });
-
-  if (process.env.WORDPRESS_PLUGIN_SEO !== true) {
-    metadata.title = `${post.title} - ${siteMetadata.title}`;
-    metadata.og.title = metadata.title;
-    metadata.twitter.title = metadata.title;
-  }
-
-  const metadataOptions = {
-    compactCategories: false,
-  };
-
-  const props = {
-    post,
-    socialImage,
-  };
-
-  const { category: relatedCategory, posts: relatedPosts } = (await getRelatedPosts(categories, postId)) || {};
-  const hasRelated = relatedCategory && Array.isArray(relatedPosts) && relatedPosts.length;
-
-  if (hasRelated) {
-    props.related = {
-      posts: relatedPosts,
-      title: {
-        name: relatedCategory.name || null,
-        link: categoryPathBySlug(relatedCategory.slug),
-      },
-    };
-  }
-
-  const helmetSettings = helmetSettingsFromMetadata(metadata);
+  // Redirect logic moved to the server-side
+  const graphqlEndpoint = process.env.WORDPRESS_GRAPHQL_ENDPOINT;
+  const domain = graphqlEndpoint.replace('/graphql', '');
+  const redirectUrl = domain + '/' + params.slug;
 
   return {
-    props: {
-      ...props,
-      helmetSettings,
+    redirect: {
+      destination: redirectUrl,
+      permanent: true,
     },
   };
 }
