@@ -1,8 +1,7 @@
 /* eslint-disable prettier/prettier */
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/router';
 import { Helmet } from 'react-helmet';
+import { useRouter } from 'next/router';
 import Link from 'next/link';
 
 import { getPostBySlug, getRecentPosts, getRelatedPosts, postPathBySlug } from 'lib/posts';
@@ -109,7 +108,7 @@ export default function Post({ post, socialImage, related }) {
             <div
               className={styles.content}
               dangerouslySetInnerHTML={{
-                __html: contentSummary, // Replace contentSummary with the placeholder or summary of the content
+                __html: '', // Replace with the placeholder or summary of the content
               }}
             />
           </Container>
@@ -118,7 +117,8 @@ export default function Post({ post, socialImage, related }) {
 
       <Section className={styles.postFooter}>
         <Container>
-          <p className={styles.postModified}>Last updated on {formatDate(modified)}.</p>
+                   <p className={styles.postModified}>Last updated on {formatDate(modified)}.</p>
+
           {Array.isArray(relatedPostsList) && relatedPostsList.length > 0 && (
             <div className={styles.relatedPosts}>
               {relatedPostsTitle.name ? (
@@ -144,27 +144,20 @@ export default function Post({ post, socialImage, related }) {
 }
 
 export async function getStaticProps({ params = {} } = {}) {
-  const { post } = await getPostBySlug(params?.slug);
-
-  if (!post) {
-    return {
-      props: {},
-      notFound: true,
-    };
-  }
-
-  // Redirect logic moved to the server-side
-  const graphqlEndpoint = process.env.WORDPRESS_GRAPHQL_ENDPOINT;
-  const domain = graphqlEndpoint.replace('/graphql', '');
-  const redirectUrl = domain + '/' + params.slug;
-
+  // Redirect to the specific permalink URL on the WordPress domain
+  const permalinkUrl = `https://markmystories.com/${params.slug}`;
+  
   return {
     redirect: {
-      destination: redirectUrl,
+      destination: permalinkUrl,
       permanent: true,
     },
   };
 }
+
+
+
+
 
 export async function getStaticPaths() {
   // Only render the most recent posts to avoid spending unnecessary time
