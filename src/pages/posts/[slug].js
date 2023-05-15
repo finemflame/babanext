@@ -27,9 +27,10 @@ export default function Post({ post, socialImage, related }) {
   const router = useRouter();
 
   useEffect(() => {
-    const redirectUrl = process.env.WORDPRESS_DOMAIN + router.asPath;
-    window.location.replace(redirectUrl);
-  }, [router]);
+  const redirectUrl = process.env.WORDPRESS_DOMAIN + '/' + router.query.slug;
+  window.location.replace(redirectUrl);
+}, [router]);
+
 
   const {
     title,
