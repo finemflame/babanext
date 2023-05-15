@@ -1,5 +1,4 @@
 /* eslint-disable prettier/prettier */
-
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { Helmet } from 'react-helmet';
@@ -26,14 +25,12 @@ import styles from 'styles/pages/Post.module.scss';
 export default function Post({ post, socialImage, related }) {
   const router = useRouter();
 
-useEffect(() => {
-  const graphqlEndpoint = process.env.WORDPRESS_GRAPHQL_ENDPOINT;
-  const domain = graphqlEndpoint.replace('/graphql', '');
-
-  const redirectUrl = domain + '/' + router.query.slug;
-  window.location.replace(redirectUrl);
-}, [router]);
-
+  useEffect(() => {
+    if (router.isReady) {
+      const redirectUrl = process.env.WORDPRESS_DOMAIN + router.asPath;
+      window.location.replace(redirectUrl);
+    }
+  }, [router.isReady, router.asPath]);
 
 
   const {
